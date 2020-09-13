@@ -1,17 +1,58 @@
-import { classes } from "./UnitTest.imports.js";
+import { classes } from "./UnitTesting.Imports.js";
 
+//TODO improve OOP construction as ClassFactoryHelper
 //factory method working with dynamic class transferring
 function classFactory(className) {
   return classes[className];
 }
 
+class AssertFailedError extends Error {
+  // AssertFailedError
+  constructor(assertName, passedMessage) {
+    super(assertName);
+    this.name = "AssertFailedError";
+    this.message = `${this.name}: ${assertName} ${
+        passedMessage ? `\nMessage: ${passedMessage}` : ""
+    }`;
+  }
+}
+
 //TestMethod Attribute
 class TestMethod {
+  //#region Private
+
   static #queue = [];
   static #testCount = 0;
   static #passed = { state: true, info: "", stack: "" };
 
-  constructor() {}
+  static #noticeResult(passObj, withDetails, showStack) {
+    let dur = withDetails
+        ? `[h: ${passObj.duration.hours} | m: ${passObj.duration.minutes} | s: ${passObj.duration.seconds} | ms: ${passObj.duration.milliseconds}]`
+        : `[ ${passObj.duration.milliseconds} ms ]`;
+    console.log(
+        `[ Test: ${++this.#testCount}: Unit ƒ() ${passObj.unit.name} ]`
+    );
+    passObj.passedInfo.state
+        ? console.log(`Passed in: ${dur}`)
+        : console.error(
+        `Failed in: ${dur} ${
+            withDetails ? `\nDetails: ${passObj.passedInfo.message}` : ""
+        }\n${showStack ? "Call Stack:\n" + passObj.passedInfo.stack : ""}`
+        );
+  }
+
+  //#endregion
+
+  //#region ctor
+
+  //TODO not sure about throwing Error in ctor on creation
+  constructor() {
+    throw new Error(`Class ${TestMethod.name} is represented as a static (singleton)`);
+  }
+
+  //#endregion
+
+  //#region Public
 
   static run(withDetails = false, showStack = false) {
     console.log("Unit Test");
@@ -34,32 +75,16 @@ class TestMethod {
           milliseconds: passMs,
         };
         this.#noticeResult(
-          {
-            unit: unit,
-            passedInfo: this.#passed,
-            duration: dur,
-          },
-          withDetails,
-          showStack
+            {
+              unit: unit,
+              passedInfo: this.#passed,
+              duration: dur,
+            },
+            withDetails,
+            showStack
         );
       }
     }
-  }
-
-  static #noticeResult(passObj, withDetails, showStack) {
-    let dur = withDetails
-      ? `[h: ${passObj.duration.hours} | m: ${passObj.duration.minutes} | s: ${passObj.duration.seconds} | ms: ${passObj.duration.milliseconds}]`
-      : `[ ${passObj.duration.milliseconds} ms ]`;
-    console.log(
-      `[ Test: ${++this.#testCount}: Unit ƒ() ${passObj.unit.name} ]`
-    );
-    passObj.passedInfo.state
-      ? console.log(`Passed in: ${dur}`)
-      : console.error(
-          `Failed in: ${dur} ${
-            withDetails ? `\nDetails: ${passObj.passedInfo.message}` : ""
-          }\n${showStack ? "Call Stack:\n" + passObj.passedInfo.stack : ""}`
-        );
   }
 
   static add(testMethod) {
@@ -75,27 +100,21 @@ class TestMethod {
   static clear() {
     this.#queue = this.#queue.length !== 0 && [];
   }
-}
 
-class AssertFailedError extends Error {
-  // AssertFailedError
-  constructor(assertName, passedMessage) {
-    super(assertName);
-    this.name = "AssertFailedError";
-    this.message = `${this.name}: ${assertName} ${
-      passedMessage ? `\nMessage: ${passedMessage}` : ""
-    }`;
-  }
+  //#endregion
+
 }
 
 //Assert
 class Assert {
+  //#region Private
+
   static #assertId = 0;
 
   static #_throw(assertName = "", passedMessage) {
     throw new AssertFailedError(
-      assertName ? `on "${assertName}" => [id:${this.#assertId}]` : "",
-      passedMessage
+        assertName ? `on "${assertName}" => [id:${this.#assertId}]` : "",
+        passedMessage
     );
   }
 
@@ -107,9 +126,9 @@ class Assert {
     }
     for (const key in expected) {
       if (
-        acKeys.indexOf(key) !== -1 &&
-        typeof expected[key] === "object" &&
-        typeof actual[key] === "object"
+          acKeys.indexOf(key) !== -1 &&
+          typeof expected[key] === "object" &&
+          typeof actual[key] === "object"
       ) {
         return this.#manualComparison(expected[key], actual[key]);
       } else if (acKeys.indexOf(key) === -1 || expected[key] !== actual[key]) {
@@ -140,36 +159,49 @@ class Assert {
     return false;
   }
 
-  constructor() {}
+  //#endregion
 
-  //region public
+  //#region ctor
+
+  //TODO not sure about throwing Error in ctor on creation
+  constructor() {
+    throw new Error(`Class ${Assert.name} is represented as a static (singleton)`);
+  }
+
+  //#endregion
+
+  //#region Public
+
+  static get That(){
+    return "Hello";
+  }
 
   //AreEqual [For all types]
   static areEqual(expected, actual, ignoreCase = false) {
     this.#assertId++;
     !this.#onAreEqual(expected, actual, ignoreCase) &&
-      this.#_throw(this.areEqual.name);
+    this.#_throw(this.areEqual.name);
   }
 
   //AreNotEqual [For all types]
   static areNotEqual(expected, actual, ignoreCase = false) {
     this.#assertId++;
     this.#onAreEqual(expected, actual, ignoreCase) &&
-      this.#_throw(this.areNotEqual.name);
+    this.#_throw(this.areNotEqual.name);
   }
 
   //AreSame [For Objects only]
   static areSame(expected, actual, message = "") {
     this.#assertId++;
     !this.#onAreSame(expected, actual) &&
-      this.#_throw(this.areSame.name, message);
+    this.#_throw(this.areSame.name, message);
   }
 
   //AreNotSame [For Objects only]
   static areNotSame(expected, actual, message = "") {
     this.#assertId++;
     this.#onAreSame(expected, actual) &&
-      this.#_throw(this.areNotSame.name, message);
+    this.#_throw(this.areNotSame.name, message);
   }
 
   //Equals
@@ -264,15 +296,17 @@ class Assert {
         !wasThrown && this.#_throw(this.throwsException.name, template);
       } else
         this.#_throw(
-          this.throwsException.name,
-          `"${errorType}" does not inherited from Error`
+            this.throwsException.name,
+            `"${errorType}" does not inherited from Error`
         );
     } else
       this.#_throw(
-        this.throwsException.name,
-        `"${action}" is not a "function"`
+          this.throwsException.name,
+          `"${action}" is not a "function"`
       );
   }
+
+  //#endregion
 }
 
-export { Assert, TestMethod };
+export { Assert, TestMethod, AssertFailedError };
